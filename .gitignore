@@ -1,6 +1,8 @@
 # Ignore compiled Python bytecode
 __pycache__/
 *.pyc
+bot/secure
+bot/secure/token.key
 
 # Ignore Node.js dependencies
 node_modules/
@@ -8,7 +10,6 @@ node_modules/
 # Ignore log files
 *.log
 *.key
-*.json
 
 # Ignore IDE-specific directories
 .idea/
@@ -16,4 +17,3 @@ node_modules/
 
 .dev/
 .venv/
-/bot/secure
