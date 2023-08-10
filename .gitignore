@@ -1,0 +1,16 @@
+# Ignore compiled Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore Node.js dependencies
+node_modules/
+
+# Ignore log files
+*.log
+
+# Ignore IDE-specific directories
+.idea/
+.vscode/
+
+.dev/
+.venv/
