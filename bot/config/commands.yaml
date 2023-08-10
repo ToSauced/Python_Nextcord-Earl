@@ -1,0 +1,37 @@
+commands:
+
+  - label: help
+    aliases: ['info','bot_info','commands','man','manual']
+    description: Displays this help message
+    action: help
+    enabled: true
+
+  - label: servers
+    aliases: []
+    description: Displays the current servers that the bot is connected to
+    action: servers
+    enabled: true
+
+  - label: server_info
+    aliases: ['sinfo']
+    description: Display info on a specified server 
+    action: server_info
+    enabled: true
+  
+  - label: exit
+    aliases: ['stop','cancel']
+    description:
+    action: exit
+    enabled: true
+  
+  - label: clear
+    aliases: []
+    description: Clear the console, for your viewing pleasure
+    action: clear
+    enabled: true
+
+  - label: uptime
+    aliases: ['bot_uptime','utime','ut']
+    description: Shows the current uptime of the bot
+    action: uptime
+    enabled: true

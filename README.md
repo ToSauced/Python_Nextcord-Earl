@@ -1,4 +1,4 @@
-Python Discord Bot using nextcord.js
+#Python Discord Bot using nextcord.js
 https://docs.nextcord.dev/en/stable/
 
 Dependencies are installed in a virtual environment
