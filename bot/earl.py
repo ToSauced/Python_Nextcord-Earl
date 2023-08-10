@@ -1,8 +1,13 @@
-import nextcord, logging, asyncio, datetime, os
+import nextcord, logging, asyncio, datetime, yaml, os
 from nextcord.ext import commands
 
 logger = logging.getLogger("bot_logger")
 start_time = datetime.datetime.now()
+
+# yaml files
+with open ('bot/config/settings.yaml','r') as file:
+    data_settings = yaml.safe_load(file) # settings['value']
+    settings = data_settings['settings']
 
 # Custom Cog from others to extend from
 class BaseCog(commands.Cog):
@@ -110,6 +115,7 @@ class BaseBot(commands.Bot):
             
 def init_database(): # SQL connection definition
     return
+
 def init_logger(): # Setting .log file and Console logging  (only referenced once)
     formatting = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     console_formatting = logging.Formatter('[%(levelname)s]: %(message)s')
@@ -128,12 +134,14 @@ def init_logger(): # Setting .log file and Console logging  (only referenced onc
     logger.addHandler(logConsole_handler)
 
 # Define Bot subscription to events, define the types of events your bot recieves
+custom_prefixes = ['!','$'] # TODO: per server setting to set custom prefixes: uses server settings (prob SQL)
+bot_prefix = commands.when_mentioned_or(*custom_prefixes)
 intents = nextcord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.message_content = True
 intents.guilds = True
-bot = BaseBot(command_prefix='!', intents=intents)
+bot = BaseBot(command_prefix=bot_prefix, intents=intents)
 async def before_invoke_callback(ctx):
     await bot.record_invoke(ctx)
 

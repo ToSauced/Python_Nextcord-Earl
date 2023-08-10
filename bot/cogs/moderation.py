@@ -169,9 +169,9 @@ class ModerationCommands(earl.BaseCog):
                              timestamp=self.calculateTime())
         
         if bypass_warning:
-            embed.set_footer(text="Server")
+            embed.set_footer(icon_url='https://tosauced.duckdns.org/resources/static/images/tosauced_logo.png')
         else:
-            embed.set_footer(text=f"{ctx.author}")
+            embed.set_footer(text=f"{ctx.author}") # set the image to the avatar of the user who warned them
         embed.add_field(name="Reason", value=f"{reason}", inline=False)
         embed.add_field(name="Staff", value=f"{ctx.author}", inline=False)
         # TODO: make it so max_limit can be defined

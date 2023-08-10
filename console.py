@@ -1,11 +1,6 @@
 import bot.earl as earl
 import os, re, yaml, inspect, datetime, threading
 
-# yaml files
-with open ('bot/config/settings.yaml','r') as file:
-    data_settings = yaml.safe_load(file) # settings['value']
-    bot_developer_settings = data_settings['settings']
-
 with open ('bot/config/commands.yaml') as file:
     data_commands = yaml.safe_load(file) # commands['command']
     console_commands = data_commands['commands']
@@ -86,12 +81,13 @@ def uptime():
 def console_load(): # asthetic function (my bot dashboard?)
     print("\nWelcome\n")
     print("Use 'help' to get started!")
-    print("Documentation: https://tosauced.duckdns.org/discordbot/docs\n")
+    print("Documentation: https://tosauced.duckdns.org/discordbot/docs \n")
     print(f"Servers: {len(earl.bot.guilds)+1}")
     #print("\nTODO: ")
     # todo list (top 3)
     print("")
     return
+
 def exec_console():
     console_load()
     while True: # Python App Console 

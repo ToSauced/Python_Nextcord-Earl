@@ -23,9 +23,21 @@ class BotDefault(earl.BaseCog):
     #     with open('example.txt', 'r') as file:
     #         await ctx.send(file=nextcord.File(file, filename='example.txt'))
     
+    @commands.command(name="ad")
+    async def ad(self, ctx):
+        # timed (ad) messages
+        return
+    
     @commands.command(name="bug")
     async def bug(self, ctx):
         await ctx.reply(f"{self.calculateTime()}")
+        return
+
+    @commands.command(name="display",
+                      description="Enable/Disable displaying server values w/ channels at the top.")
+    async def display(self, ctx):
+        # Creates or removes channels i.e., 'Channels: # or Members: #' locked to all users other than bot 
+        # After creation it needs a loop to run which will update, also need a function to update on bot load if displays enabled
         return
 
     @commands.command(name="donate")

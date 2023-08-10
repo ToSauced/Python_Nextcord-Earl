@@ -7,7 +7,7 @@ commands:
     enabled: true
 
   - label: servers
-    aliases: []
+    aliases: ['server_list']
     description: Displays the current servers that the bot is connected to
     action: servers
     enabled: true
