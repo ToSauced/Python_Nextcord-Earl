@@ -92,7 +92,7 @@ def exec_console():
     console_load()
     while True: # Python App Console 
         
-        string = str(input(f"Earl [Console]: ")).lower()
+        string = str(input(f"{earl.developer_settings['bot_name']} [Console]: ")).lower()
 
         pattern = r'"([^"]+)"|(\S+)'
 

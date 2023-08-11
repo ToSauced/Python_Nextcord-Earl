@@ -169,7 +169,8 @@ class ModerationCommands(earl.BaseCog):
                              timestamp=self.calculateTime())
         
         if bypass_warning:
-            embed.set_footer(icon_url='https://tosauced.duckdns.org/resources/static/images/tosauced_logo.png')
+            # TODO: repalce 'Bot' with a variable bot_name
+            embed.set_footer(text=f"{earl.developer_settings['bot_name']}", icon_url='https://tosauced.duckdns.org/resources/static/images/tosauced_logo.png')
         else:
             embed.set_footer(text=f"{ctx.author}") # set the image to the avatar of the user who warned them
         embed.add_field(name="Reason", value=f"{reason}", inline=False)

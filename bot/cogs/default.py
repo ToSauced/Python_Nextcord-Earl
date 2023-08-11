@@ -38,6 +38,7 @@ class BotDefault(earl.BaseCog):
     async def display(self, ctx):
         # Creates or removes channels i.e., 'Channels: # or Members: #' locked to all users other than bot 
         # After creation it needs a loop to run which will update, also need a function to update on bot load if displays enabled
+        
         return
 
     @commands.command(name="donate")

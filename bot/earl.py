@@ -1,13 +1,48 @@
 import nextcord, logging, asyncio, datetime, yaml, os
+import mysql.connector 
 from nextcord.ext import commands
 
-logger = logging.getLogger("bot_logger")
 start_time = datetime.datetime.now()
-
-# yaml files
 with open ('bot/config/settings.yaml','r') as file:
     data_settings = yaml.safe_load(file) # settings['value']
-    settings = data_settings['settings']
+    developer_settings = data_settings['settings']
+
+def init_logger(): # Setting .log file and Console logging  (only referenced once)
+    formatting = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    console_formatting = logging.Formatter('[%(levelname)s]: %(message)s')
+    # Initalize
+    logger = logging.getLogger("bot_logger")
+    logger.setLevel(logging.INFO) # logging.levels: [debug, info, warning, error, critical]
+    # Initalize Handlers
+    logFile_handler = logging.FileHandler(f'bot.log') # log file output
+    logFile_handler.setLevel(logging.INFO)
+    logConsole_handler = logging.StreamHandler() # log console output
+    logConsole_handler.setLevel(logging.ERROR)
+    # Add Handlers to Logger
+    logFile_handler.setFormatter(formatting)
+    logConsole_handler.setFormatter(console_formatting)
+    logger.addHandler(logFile_handler)
+    logger.addHandler(logConsole_handler)
+logger = logging.getLogger("bot_logger")
+
+with open ('bot/secure/sql.yaml','r') as file:
+    sql_info = yaml.safe_load(file) # settings['value']
+    sql_connection_info = sql_info['connection_settings']
+def init_database(): # SQL connection definition
+    try:
+        connection = mysql.connector.connect(
+            host=sql_connection_info['host'],
+            user=sql_connection_info['username'],
+            password=sql_connection_info['password'],
+            database=sql_connection_info['database_name']
+        )
+        return connection
+    except mysql.connector.Error as e:
+        logger.critical(f"[SQL] Failed to connect to database: {e}")
+        return None
+db_connection = init_database()
+if db_connection:
+    print("Successfully connected to the database")
 
 # Custom Cog from others to extend from
 class BaseCog(commands.Cog):
@@ -37,7 +72,10 @@ class BaseBot(commands.Bot):
 
         if self.get_command('help'):
             self.remove_command("help")
-        self.add_bot_cogs()
+        if developer_settings['load_cogs']:
+            self.add_bot_cogs()
+        else:
+            print("Loading Cogs disabled, none loaded.")
 
         # remove all default commands / override
         # for command in self.commands:
@@ -112,26 +150,6 @@ class BaseBot(commands.Bot):
             print("[CommandError-Cleanup] Failed, attempting to remove message from Unauthorized channel (probably a DM)")
         except:
             await ctx.reply(f"An error occured: {error}")
-            
-def init_database(): # SQL connection definition
-    return
-
-def init_logger(): # Setting .log file and Console logging  (only referenced once)
-    formatting = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-    console_formatting = logging.Formatter('[%(levelname)s]: %(message)s')
-    # Initalize
-    logger = logging.getLogger("bot_logger")
-    logger.setLevel(logging.INFO) # logging.levels: [debug, info, warning, error, critical]
-    # Initalize Handlers
-    logFile_handler = logging.FileHandler(f'bot.log') # log file output
-    logFile_handler.setLevel(logging.INFO)
-    logConsole_handler = logging.StreamHandler() # log console output
-    logConsole_handler.setLevel(logging.ERROR)
-    # Add Handlers to Logger
-    logFile_handler.setFormatter(formatting)
-    logConsole_handler.setFormatter(console_formatting)
-    logger.addHandler(logFile_handler)
-    logger.addHandler(logConsole_handler)
 
 # Define Bot subscription to events, define the types of events your bot recieves
 custom_prefixes = ['!','$'] # TODO: per server setting to set custom prefixes: uses server settings (prob SQL)
@@ -141,6 +159,7 @@ intents.message_content = True
 intents.members = True
 intents.message_content = True
 intents.guilds = True
+intents.voice_states = True
 bot = BaseBot(command_prefix=bot_prefix, intents=intents)
 async def before_invoke_callback(ctx):
     await bot.record_invoke(ctx)
