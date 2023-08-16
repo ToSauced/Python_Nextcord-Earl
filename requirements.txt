@@ -1,0 +1,6 @@
+# Using Python 3.10
+
+# Required Python Packages 'pip install requirements' 
+nextcord>=2.5.0
+pyyaml>=6.0
+mysql-connector-python>=8.1.0

@@ -127,6 +127,40 @@ class Automod(earl.BaseCog):
 class ModerationCommands(earl.BaseCog):
     def __init__(self, bot):
         self.bot = bot
+
+        # PER SERVER COMMAND DISABLING [commands_diabled <- Table]
+    @commands.command(name="enable")
+    async def enable(self, ctx, *, args):
+        return
+    @commands.command(name="disable")
+    async def disable(self, ctx, *, args):
+        return
+    
+    # PER SERVER COMMAND RESTRICTIONS [command_restrictions <- Table]
+    @commands.command(name="restrict")
+    async def restrict(self, ctx, *, args):
+        return
+    @commands.command(name="unrestrict")
+    async def unrestrict(self, ctx, *, args):
+        return
+    
+    # PER SERVER COMMAND RESTRICTIONS TO MODONLY
+    @commands.command(name="modonly")
+    async def modonly(self, ctx, *, args):
+        return
+    @commands.command(name="unmodonly")
+    async def unmodonly(self, ctx, *, args):
+        return
+    
+    # PER SERVER COMMAND IGNORE
+    @commands.command(name="ignore")
+    async def ignore(self, ctx, *, args):
+        args = str(args).split(" ")
+        return
+    @commands.command(name="unignore")
+    async def unignore(self, ctx, *, args):
+        args = str(args).split(" ")
+        return
     
     @commands.command(name="mute")
     async def mute(self, ctx, member: nextcord.Member, time=None):
@@ -198,31 +232,47 @@ class ModerationCommands(earl.BaseCog):
             except:
                 await ctx.send(f"Couldn't send messsage to {member.name} for some reason?")
     
+    # function for ban and saveban
+    
+    # function for kick and cleankick
+    async def kick_member(self, ctx, member: nextcord.Member = None, reason: str = None):
+        if reason is None:
+            reason = "No reason was provided."
+        if member == ctx.author:  # can't kick yourself
+            return
+        if member == ctx.guild.owner or member == self.bot.user:
+            await ctx.send("A")
+            return
+        # actually kick the member
+        await member.kick(reason=reason)
+        # prepare the message
+        embed = nextcord.Embed(title=f"{member.name} Kicked", color=nextcord.Colour.orange())
+        embed.add_field(name="Reason", value=f"{reason}", inline=False)
+        embed.add_field(name="Staff", value=f"{ctx.author}", inline=False)
+        # send user a DM with the kick embed
+        await member.send(embed=embed)
+        # send to current channel or (if specified) send to log channel or BOTH
+        await ctx.send(embed=embed)
+        return
     @commands.command(name="kick")
     @commands.has_permissions(administrator=True)
     async def kick(self, ctx, member: nextcord.Member, *, reason=None):
+        commands = ModerationCommands(bot=self.bot)
+        await commands.kick_member(ctx=ctx, member=member, reason=reason)
+        return
+    @commands.command(name="cleankick",
+                      description="Same as '!kick' but it will remove all messages from the kicked user.")
+    async def cleankick(self, ctx: commands.Context, member: nextcord.Member, *, reason=None):
+        commands = ModerationCommands(bot=self.bot)
+        await commands.kick_member(ctx=ctx, member=member, reason=reason)
         
-        if member == ctx.author:
-            await ctx.send("A")
-            return
-        if member == self.bot.user:
-            await ctx.send("A")
-            return
-        if member == ctx.guild.owner:
-            await ctx.send("A")
-            return
-        if reason is None:
-            reason = "No reason was provided."
-        
-        await member.kick(reason=reason)
-        
-        embed = nextcord.Embed(title=f"{member.name} Kicked",color=nextcord.Colour.orange())
-        
-        embed.add_field(name="Reason", value=f"{reason}", inline=False)
-        embed.add_field(name="Staff", value=f"{ctx.author}", inline=False)
-        
-        await ctx.send(embed=embed)
-        
+        # Additional message cleanup
+        for channel in ctx.guild.text_channels:
+            async for message in channel.history(limit=None):
+                if message.author == member:
+                    await message.delete()
+        return
+    
     @commands.command()
     async def lock(self, ctx):
         # lock [channel] (time) (message)
@@ -233,6 +283,12 @@ class ModerationCommands(earl.BaseCog):
         # lockdown (message)
         # lockdown all channels, must be manually cancelled,started
         await ctx.send("a")
+
+    @commands.command(aliases=['membercount','usercount'])
+    # description: get the server member count (includes bot by default), if true or humans it only returns true members
+    # usage: !membercount ('humans' or 'true')
+    async def guildsize(self,ctx):
+        await ctx.send("A")
 
 def setup(bot): # referenced automatically when bot.load_extension
     bot.add_cog(Automod(bot))

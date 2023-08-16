@@ -23,71 +23,120 @@ class BotDefault(earl.BaseCog):
     #     with open('example.txt', 'r') as file:
     #         await ctx.send(file=nextcord.File(file, filename='example.txt'))
     
-    @commands.command(name="ad")
+    @commands.command(name="ads",
+                      aliases=['advertisements'],
+                      usage="!ads",
+                      description="Timed Advertisements to display on the server, manage them here.",
+                      enabled=False,
+                      guild_only=True)
     async def ad(self, ctx):
-        # timed (ad) messages
+        # TODO: timed messages (ads) saved per server in SQL as = id|message|cooldown
         return
     
-    @commands.command(name="bug")
-    async def bug(self, ctx):
-        await ctx.reply(f"{self.calculateTime()}")
+    @commands.command(name="avatar",
+                      aliases=["av"],
+                      usage="!avatar [member]",
+                      description="Replies with the avatar of the specified user",
+                      enabled=True,
+                      guild_only=False)
+    # TODO: we could make it so we could pass multiple members, because why not, i.e., ctx.message.content.parse_mentions 
+    async def avatar(self, ctx: commands.Context, *, args=None):
+        
+        if isinstance(ctx.channel, nextcord.TextChannel) or ctx.guild is not None:
+            users = ctx.guild.parse_mentions(ctx.message.content) or []
+        else:
+            users = []
+        
+        try:
+            if len(users) > 1:
+                for user in users:
+                    await ctx.author.send(f"{user.display_name}'s Avatar: {user.display_avatar}")
+            else:
+                if isinstance(ctx.channel, nextcord.DMChannel) or ctx.guild is None:
+                    member = ctx.author
+                elif len(users)==0: # no user specified, return self
+                    member = ctx.author
+                else:
+                    member = users[0]
+                    
+                await ctx.author.send(f"{member.display_name}'s Avatar: {member.display_avatar}")
+        except Exception as e:
+            await ctx.reply(f"An error occurred while fetching the avatar: {e}")
+        return
+    
+    @commands.command(name="bug",
+                      aliases=[],
+                      usage="!bug [message]",
+                      description="Report an error with the bot, what happened (detailed, please)",
+                      enabled=False,
+                      guild_only=False)
+    async def bug(self, ctx, *, message):
+        # TODO: goes into SQL, one big table for all as = id|bug-message|user|timestamp
+        await ctx.reply(f"Bug: '{message}'")
         return
 
     @commands.command(name="display",
-                      description="Enable/Disable displaying server values w/ channels at the top.")
-    async def display(self, ctx):
-        # Creates or removes channels i.e., 'Channels: # or Members: #' locked to all users other than bot 
-        # After creation it needs a loop to run which will update, also need a function to update on bot load if displays enabled
-        
+                      aliases=[],
+                      usage="!display ['members' or 'channels']",
+                      description="Enable/Disable displaying server values w/ channels at the top.",
+                      enabled=True,
+                      guild_only=True)
+    async def display(self, ctx, type=None):
+        # TODO: server-settings SQL, as = setting(display-member-count)|t/f
+        guild:nextcord.Guild = ctx.guild
+
+        overwrites = {
+            ctx.guild.default_role: nextcord.PermissionOverwrite(connect=False),  # Lock the channel for everyone
+        }
+
+        # Values
+        member_count = guild.member_count
+        channel_count = len(guild.fetch_channels())
+
+        # Add members value to a list of created ones
+        # TODO: implement removing the channel
+        if type == "members":
+            channel = await guild.create_voice_channel(name=f"Members: {member_count}", overwrites=overwrites)
+        elif type == "channels":
+            channel = await guild.create_voice_channel(name=f"Channels: {channel_count}", overwrites=overwrites)
+        else:
+            await ctx.reply("Unknown type to display")
         return
 
-    @commands.command(name="donate")
+    @commands.command(name="donate",
+                      aliases=[],
+                      usage="!donate",
+                      description="Display a donate link for the developer",
+                      enabled=False,
+                      guild_only=False) # FINISHED 
     async def donate(self, ctx):
-        await ctx.reply("A")
+        await ctx.reply("I don't take any money, yet...")
         return
     
-    @commands.command(name="welcome")
+    @commands.command(name="welcome",
+                      aliases=[],
+                      usage="!welcome [enable/disable or 'message']",
+                      description="Enabled/Disable, or set the welcome message for users entering the server!",
+                      enabled=True,
+                      guild_only=True)
     async def welcome(self, ctx):
         # Make sure default welcome message is disabled or replace 
+        # TODO: implementation in SQL = setting(welcome_message)|message|t/f
         return
-    @commands.command(name="joindm")
+    @commands.command(name="joindm",
+                      aliases=[],
+                      usage="!joindm [enable/disable or 'message']",
+                      description="Set a DM message to send users when they join the server",
+                      enabled=True,
+                      guild_only=True)
     async def joindm(self, ctx, *, args):
         # disabled by default: DM message that is sent to the user on join
-        # TODO: create the listener
-
+        # TODO: implementation in SQL = setting(welcome_message)|message|t/f
         return 
     
-    @commands.command(name="enable")
-    async def enable(self, ctx, *, args):
-        return
-    @commands.command(name="disable")
-    async def disable(self, ctx, *, args):
-        return
-    
-    @commands.command(name="restrict")
-    async def restrict(self, ctx, *, args):
-        return
-    @commands.command(name="unrestrict")
-    async def unrestrict(self, ctx, *, args):
-        return
-    
-    @commands.command(name="modonly")
-    async def modonly(self, ctx, *, args):
-        return
-    @commands.command(name="unmodonly")
-    async def unmodonly(self, ctx, *, args):
-        return
-    
-    @commands.command(name="ignore")
-    async def ignore(self, ctx, *, args):
-        args = str(args).split(" ")
-        return
-    @commands.command(name="unignore")
-    async def unignore(self, ctx, *, args):
-        args = str(args).split(" ")
-        return
-    
-    @commands.command(name="prefix")
+    # PER SERVER BOT PREFIXES ?? How will I do this/restart the bot?
+    @commands.command(name="prefix",
+                      enabled=False)
     async def prefix(self, ctx, *, args):
         args = str(args).split(" ")
         if len(args) == 0:
@@ -102,21 +151,34 @@ class BotDefault(earl.BaseCog):
             return # reset to default 
         return
 
-    @commands.command(name="help")
-    async def help(self, ctx):
+    @commands.command(name="help") # SENT THROUGH DM 
+    async def help(self, ctx, icommand=None):
 
-        embed=nextcord.Embed(title="Commands",color=nextcord.Color.light_gray())
+        bot: commands.Bot = self.bot
+        if icommand is None:
+            await ctx.message.delete()
+            for cog in bot.cogs:
+                embed=nextcord.Embed(title=f"{cog} Commands",color=nextcord.Color.light_gray())
+                for command in bot.get_cog(cog).get_commands():
+                    # hidden commands (e.g., from cogs)
+                    command: commands.Command
+                    if command.hidden:
+                        continue
+                    
+                    name = command.name + f" {command.aliases}"
+                    
+                    description = command.description or "No description avaliable."
+                    usage = command.usage or "No usage set."
 
-        for command in self.bot.commands:
-            # hidden commands (e.g., from cogs)
-            if command.hidden:
-                continue
-            
-            name = command.name
-            description = command.help or "No description avaliable."
+                    description = f"""**Usage**: {usage}
+                                    **Description**: {description}"""
 
-            embed.add_field(name=name, value=description, inline=False)
-        await ctx.reply(embed=embed)
+                    embed.add_field(name=name, value=description, inline=False)
+                await ctx.author.send(embed=embed)
+        else:
+            command = bot.get_command(icommand)
+            help = command.help or f"No help message avaliable for {icommand}."
+            await ctx.reply(help)
 
     @commands.command(name="ping")
     async def ping(self, ctx): # basically testing latency to me
@@ -164,51 +226,107 @@ class BotDefault(earl.BaseCog):
     # description: Get user information
     async def whois(self,ctx, member: nextcord.Member = None):
         if member is None:
-            member = ctx.author
+            member: nextcord.Member = ctx.author
 
         # Define user information
+        name = member.display_name
+        id = member.id
+        roles = member.roles
+        role_string = ""
+        for role in roles:
+            if roles[-1] != role:
+                role_string += role.name+", "
+            else:
+                role_string += role.name
+        avatar = member.display_avatar
+        if member.activity is not None:
+            status = member.activity.name
+        else:
+            status = "Nothing"
+        if member.voice is not None:
+            if member.voice.afk:
+                is_afk = True
+            else:
+                is_afk = False
+        else:
+            is_afk = False
+
+        # user 'tags'
+        title = f"{name.upper()}"
+        if is_afk:
+            title += " [AFK_USER]"
+        if member.bot:
+            title += " [BOT]"
+
 
         # Construct user ID card (embed)
-        embed = nextcord.Embed()
+        embed = nextcord.Embed(title=title,
+                               description=f"ID: {id}",
+                               timestamp=self.calculateTime())
 
-        # Send embed
+        embed.add_field(name="User Status",value=f"{status}",inline=False)
+        embed.add_field(name="About",value=f"",inline=False)
+        embed.add_field(name="Roles",value=f"{role_string}",inline=False)
+        
+        embed.set_image(avatar)
+
+        # TODO: Add some buttons, like opening a chat w/ the user
         await ctx.send(embed=embed)
     
     @commands.command(name="nick",
                       usage="!nick [set,remove] (name) <member>")
-    # description:
-    async def nick(self, ctx, function: str, name: str = None, member: nextcord.Member = None):
-        
+    async def nick(self, ctx, *, args):
+        # usage: !nick <function> [name] <user>, must use mentions in this context
+        args = str(args).split(" ")
+
+        users = ctx.guild.parse_mentions(ctx.message.content) or []
+
         functions = ['set','remove']
 
-        if function in functions:
-            if function == functions[0]:
-                
-                if member is None:
-                    member = ctx.author
-                if member.joined_at is not None:
-                    if name is not None & name.isascii:
-                        member.edit(nick=name)
-                        response = f"{member.name}'s nickname has been set to **{name}**"
-                    else:
-                        response = f"{name} is made up of invalid characters."
+        await ctx.reply(f"{args}")
+
+        if len(users) == 0:
+            ctx.send(f"No user was specified")
+            return
+        member: nextcord.Member = users[0]
+        if member is None or member.joined_at is None:
+            member = ctx.author
+
+        if args[0] in functions:
+            if args[0] == functions[0]: # SET NICKNAME
+                # TODO: if nickname is in quotes "" it puts the quotes as well, fix that
+                if len(args) == 3:
+                    await member.edit(nick=args[1])
+                    response = f"Users name was successfully updated to **{args[1]}**"
                 else:
-                    response = f"{member.name} has never joined the server!"
-        
-        if function is None:
-            # self nickname status check
+                    response = f"Your really doin the most, redo it."
+
+            if args[0] == functions[1]: # REMOVE NICKNAME
+                await member.edit(nick=member.name)
+                response = f"{member.name}'s nickname has been removed!"
+
+        else:
             if member.nick == member.name:
-                response = "No nickname is currently applied to you."
+                response = f"No nickname is currently applied to you."
             else:
                 response = f"Current nickname: **{member.nick}**"
 
         await ctx.send(response)
+        return
 
     @commands.command(name="invite")
-    async def invite(self,ctx):
+    async def invite(self,ctx,type: str):
         # action: invite [bot or server]
-        # description: generate an invite for bot or for the discord server
-        await ctx.send("A")
+        valid_types = ['server','bot']
+
+        bot_invite = "https://discord.com/api/oauth2/authorize?client_id=1135022269295513721&permissions=8&scope=bot"
+        if type == valid_types[0]:
+            # Generate invite for current guild, or provide an existing link 
+            return
+        elif type == valid_types[1]:
+            await ctx.reply(f"**Bot Invite**: {bot_invite}")
+
+        return
     
     @commands.command(name="settings")
     async def settings(self, ctx):
@@ -267,11 +385,6 @@ class BotDefault(earl.BaseCog):
                            )
         else:
             await ctx.reply("You must be in a server (to use this command)")
-    @commands.command(aliases=['membercount','usercount'])
-    # description: get the server member count (includes bot by default), if true or humans it only returns true members
-    # usage: !membercount ('humans' or 'true')
-    async def guildsize(self,ctx):
-        await ctx.send("A")
     
     @commands.command(name="gangs")
     async def gangs(self, ctx):

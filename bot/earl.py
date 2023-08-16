@@ -25,24 +25,30 @@ def init_logger(): # Setting .log file and Console logging  (only referenced onc
     logger.addHandler(logConsole_handler)
 logger = logging.getLogger("bot_logger")
 
+# Get SQL Login/DB information
 with open ('bot/secure/sql.yaml','r') as file:
     sql_info = yaml.safe_load(file) # settings['value']
     sql_connection_info = sql_info['connection_settings']
-def init_database(): # SQL connection definition
+# Creation SQL connection object
+def init_database():
     try:
+
         connection = mysql.connector.connect(
             host=sql_connection_info['host'],
             user=sql_connection_info['username'],
             password=sql_connection_info['password'],
             database=sql_connection_info['database_name']
         )
-        return connection
+
+        cursor = connection.cursor()
+
+        logger.info(f"[SQL] Successfully connected to {sql_connection_info['database_name']} as {sql_connection_info['username']}")
+        return cursor # Object that interacts with database (i.e., cursor.execute("SQL STATEMENT"))
     except mysql.connector.Error as e:
         logger.critical(f"[SQL] Failed to connect to database: {e}")
         return None
-db_connection = init_database()
-if db_connection:
-    print("Successfully connected to the database")
+    
+cursor = init_database()
 
 # Custom Cog from others to extend from
 class BaseCog(commands.Cog):
@@ -61,9 +67,16 @@ class BaseCog(commands.Cog):
         time = current_utc_time + desired_timezone_offset
         return time
     
-    # To be called within commands, cleanup command message and response (reference Bot error_message_cleanup)
-    def clean_command_message(self, message, reply) -> None:
+    async def clean_command_message(self, message, reply) -> None:
+        # DESCRIPTION: remove message, then remove reply (effectively cleans up commands)
+        await asyncio.sleep(10)
+        await message.delete()
+        await asyncio.sleep(10)
+        await reply.delete()
         return
+    
+    def member_not_found(user) -> str:
+        return ""
 
 # Custom Bot for init functions, define baked-in listeners/commands
 class BaseBot(commands.Bot):
@@ -91,13 +104,6 @@ class BaseBot(commands.Bot):
                 except Exception as e:
                     print(f"Failed to load cog: {filename} => {e}")
 
-    @staticmethod # clean up recieved/sent messages
-    async def error_message_deletion(sleep_time: int, msg, reply):
-        await asyncio.sleep(sleep_time)
-        await msg.delete()
-        await asyncio.sleep(sleep_time)
-        await reply.delete()
-
     async def on_ready(self):
         logger.info(f'[Bot-Ready] Logged in as {bot.user.name} (ID: {bot.user.id})')
 
@@ -107,49 +113,49 @@ class BaseBot(commands.Bot):
     async def on_guild_remove(self, guild: nextcord.Guild):
         logger.info(f'[Bot-GuildLeave] {bot.user.name} has left {guild.name} (ID: {guild.id})')
 
-    async def record_invoke(self, ctx):
+    async def record_invoke(self, ctx: commands.Context):
         # TODO: (enabled/disable) delete command messages as they are sent
         # await ctx.message.delete() 'for example, shouldn't be done with 8ball, would'nt you wanna look back at your question?'
         logger.info(f"[Invoke-Command] {ctx.command} by {ctx.author} in {ctx.guild}.")
         logger.info(f"DEVELOPMENT {ctx.message} and, {ctx.reply}")
         return
     
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
 
-        command = ctx.command
         string = ctx.message.content
+        stringlet = string.split(" ")
+        command = stringlet[0]
         
-        # Create bot instance to reference functions 
-        bot_instance = BaseBot(command_prefix='!', intents=intents)
-
-        try:
-            if isinstance(error, commands.CommandNotFound):
-                reply = await ctx.reply(f"Sorry, the command {command} doesn't seem to exist.")
-                await bot_instance.error_message_deletion(5,ctx.message,reply)
-            elif isinstance(error, commands.CommandOnCooldown):
-                cooldown_remaining = error.retry_after
-                minutes, seconds = divmod(cooldown_remaining, 60)
-                reply = await ctx.reply(f"Slow down, !{command} is on a cooldown for {int(minutes)} minutes and {int(seconds)} seconds!")
-                await bot_instance.error_message_deletion(3,ctx.message,reply)
-            elif isinstance(error, commands.NoPrivateMessage):
-                reply = await ctx.reply(f"'!{string}' must be executed inside of a server!")
-                await bot_instance.error_message_deletion(60,ctx.message,reply)
-            elif isinstance(error, commands.DisabledCommand):
-                reply = await ctx.reply(f"!{command} is currently disabled by the developer or server moderators!")
-                await bot_instance.error_message_deletion(5,ctx.message,reply)
-            elif isinstance(error, commands.MaxConcurrencyReached):
-                reply = await ctx.reply(f"!{command} is active by too many users, allow someone to finish. Bogus right?")
-                await bot_instance.error_message_deletion(10,ctx.message,reply)
-            elif isinstance(error, commands.CheckFailure):
-                reply = await ctx.reply(f"Either your executing this in the wrong place, or shouldn't be doing so...")
-                await bot_instance.error_message_deletion(3,ctx.message,reply)
-            else:
-                reply = await ctx.reply(f"An unhandled error occured: {error}")
-                await bot_instance.error_message_deletion(10,ctx.message,reply)
-        except nextcord.Forbidden: # 403 error
-            print("[CommandError-Cleanup] Failed, attempting to remove message from Unauthorized channel (probably a DM)")
-        except:
-            await ctx.reply(f"An error occured: {error}")
+        if isinstance(error, commands.CommandNotFound):
+            reply = await ctx.reply(f"Sorry, the command {command} doesn't seem to exist.")
+        elif isinstance(error, commands.CommandOnCooldown):
+            cooldown_remaining = error.retry_after
+            minutes, seconds = divmod(cooldown_remaining, 60)
+            reply = await ctx.reply(f"Slow down, !{command} is on a cooldown for {int(minutes)} minutes and {int(seconds)} seconds!")
+        elif isinstance(error, commands.NoPrivateMessage):
+            reply = await ctx.reply(f"'!{string}' must be executed inside of a server!")
+        elif isinstance(error, commands.DisabledCommand):
+            reply = await ctx.reply(f"!{command} is currently disabled by the developer or server moderators!")
+        elif isinstance(error, commands.MaxConcurrencyReached):
+            reply = await ctx.reply(f"!{command} is active by too many users, allow someone to finish. Bogus right?")
+        elif isinstance(error, commands.CheckFailure):
+            reply = await ctx.reply(f"Either your executing this in the wrong place, or shouldn't be doing so...")
+        elif isinstance(error, commands.MemberNotFound) or isinstance(error, commands.UserNotFound):
+            reply = await ctx.reply(f"User not found")
+        else:
+            reply = await ctx.reply(f"Bot -> An unhandled error occured: {error}")
+            
+        if reply is not None: # Cleanup error message automatically deletes error response message and originating message
+            try:
+                await asyncio.sleep(10)
+                await ctx.message.delete()
+                await asyncio.sleep(10)
+                await reply.delete()
+            except nextcord.Forbidden: # 403 error
+                #print("[CommandError-Cleanup] Failed, attempting to remove message from Unauthorized channel (probably a DM)")
+                return
+            except:
+                await ctx.reply(f"An error occured: {error}")
 
 # Define Bot subscription to events, define the types of events your bot recieves
 custom_prefixes = ['!','$'] # TODO: per server setting to set custom prefixes: uses server settings (prob SQL)
