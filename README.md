@@ -1,4 +1,5 @@
 # Python Discord Bot using nextcord
+Simple Discord Bot to maybe be expanded on, just a small project
 
 ## https://docs.nextcord.dev/en/stable/
 
